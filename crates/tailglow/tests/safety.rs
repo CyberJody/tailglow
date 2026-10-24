@@ -55,6 +55,9 @@ impl Sandbox {
     }
 }
 
+// hidraw paths and their error wording exist only on Linux; other platforms open
+// devices through hidapi and refuse unknown paths with their own message.
+#[cfg(target_os = "linux")]
 #[test]
 fn device_flag_refuses_nodes_that_are_not_a_vendor_interface() {
     let sb = Sandbox::new();
