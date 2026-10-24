@@ -62,7 +62,7 @@ captured (debounce outside 8-11 ms).
       cargo clippy --workspace --all-targets -- -D warnings
       cargo test --workspace
 
-  CI runs the same on Linux, Windows and macOS (`.github/workflows/ci.yml`).
+  CI runs the same on Linux (`.github/workflows/ci.yml`); Tailglow is Linux-only.
 
 - Hardware test (`scripts/hw-test.sh`, Linux, M1 only so far): takes the
   a mouse lock (`flock` on `$XDG_RUNTIME_DIR/tailglow-mouse.lock`, or

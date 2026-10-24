@@ -21,10 +21,10 @@ Written in Rust:
   Windows and macOS, a `FakeMouse` that replays recorded USB captures for
   tests, and read-only Bluetooth status from BlueZ.
 
-**Platforms:** everything was built and tested on Linux. The Windows and
-macOS builds (CLI and GUI, hidapi transport) compile in CI but have **never
-been run against a mouse** and may need work; on macOS, nodes for which IOKit
-reports no USB interface number are refused rather than probed.
+**Platforms:** Tailglow is a **Linux** project. Keychron already makes apps for
+Windows and macOS; this one exists so Linux users (desktop and gaming distros
+alike) get the same control. Some code paths still compile elsewhere through
+hidapi, but only Linux is built, tested and supported.
 
 Everything here is clean-room work: the protocol was learned from our own USB
 captures of **Keychron Mouse 1.2.1.2 for Windows** driving a Keychron M1 in a

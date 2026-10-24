@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# CI for Tailglow. Build/test on the three desktop platforms,
-# package a .deb on Linux. No publishing and no release job: artifacts stay
+# CI for Tailglow (a Linux-only project). Build and test on Linux and
+# package a .deb. No publishing and no release job: artifacts stay
 # attached to the workflow run.
 #
 # Linux build deps: tailglow-hid uses raw hidraw ioctls (no libudev); the iced
@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
 
