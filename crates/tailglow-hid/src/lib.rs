@@ -106,7 +106,7 @@ pub fn vet(node: NodeIdentity) -> Result<FoundDevice, TransportError> {
     };
     if !model.readable() {
         return Err(TransportError::Unsupported(format!(
-            "{path} is a {} ({id}), listed as unsupported ({}); refusing to open it",
+            "{path} is a {} ({id}), which Tailglow does not support yet (listed as unsupported: {}), so it was not opened. Please tell us about it so we can add it: https://github.com/CyberJody/tailglow/issues/new?template=mouse-report.yml",
             model.name, model.evidence
         )));
     }
@@ -148,7 +148,7 @@ pub fn open_default() -> Result<(Box<dyn Transport>, &'static Model), TransportE
     }
     if let Some(dev) = found.iter().find(|d| !d.model.readable()) {
         return Err(TransportError::Unsupported(format!(
-            "{} ({}) is listed as unsupported: {}",
+            "{} ({}) is not supported yet (listed as unsupported: {}). Please tell us about it so we can add it: https://github.com/CyberJody/tailglow/issues/new?template=mouse-report.yml",
             dev.model.name, dev.id, dev.model.evidence
         )));
     }

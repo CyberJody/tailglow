@@ -1014,7 +1014,7 @@ fn cmd_list(cli: &Cli) -> Result<ExitCode> {
     }
     for d in &found {
         let role = if !d.model.readable() {
-            format!("unsupported: {}", d.model.evidence)
+            format!("not supported yet ({}); please report it: https://github.com/CyberJody/tailglow/issues/new?template=mouse-report.yml", d.model.evidence)
         } else if d.is_vendor_interface() {
             match tailglow_hid::open_path(&d.path) {
                 Ok(_) => "vendor interface, ready".to_string(),

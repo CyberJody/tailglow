@@ -139,6 +139,8 @@ fn parse_args(args: impl IntoIterator<Item = String>) -> Cli {
 }
 
 /// Application id: Wayland app_id / X11 WM_CLASS, desktop file and icon name.
+/// Only the Linux window settings use it.
+#[cfg(target_os = "linux")]
 const APP_ID: &str = "io.github.cyberjody.Tailglow";
 
 fn main() -> iced::Result {

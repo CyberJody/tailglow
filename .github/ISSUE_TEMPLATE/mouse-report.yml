@@ -25,14 +25,6 @@ body:
         - Keychron M3 mini
         - Keychron M6
         - Keychron M7
-        - Keychron M2 4K
-        - Keychron M3 4K
-        - Keychron M3 mini 4K
-        - Keychron M4
-        - Keychron M6 4K
-        - Keychron M3 8K
-        - Keychron M5 8K
-        - Keychron M6 8K
         - Other (say which below)
     validations:
       required: true

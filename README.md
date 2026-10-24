@@ -38,10 +38,8 @@ App id: `io.github.cyberjody.Tailglow`.
 ## Supported mice
 
 Status tags: *verified* = tested on the hardware, every setting read back and
-lighting confirmed with a webcam; *likely* = same vendor app, same vendor
-interface, no capture from that model; *unknown* = listed by the vendor app on
-a different interface, protocol never seen; *unsupported* = known to use a
-different protocol.
+lighting confirmed with a webcam; *likely* = same vendor app and same settings
+interface as the M1, so it should work, but no owner has confirmed it yet.
 
 **Tested by** names who confirmed a model on real hardware. A confirmed
 report from an owner (reads, then writes read back with `tailglow`) moves a
@@ -57,16 +55,6 @@ model from *likely* to *verified*: please use the [mouse report form](https://gi
 | Keychron M6 | 3434:d03f | 2 | likely, untested |  |
 | Keychron M7 | 3434:d044 | 2 | likely, untested |  |
 | Keychron 2.4 GHz receiver (Type-C / Type-A) | 3434:d031 / 3434:d030 | 1 | likely, untested |  |
-| Keychron M3 mini 4K | 3434:d037, 3434:d041 | 3 | unknown, unsupported |  |
-| Keychron M3 4K | 3434:d03c | 3 | unknown, unsupported |  |
-| Keychron M2 4K | 3434:d045 | 3 | unknown, unsupported |  |
-| Keychron M6 4K | 3434:d046 | 3 | unknown, unsupported |  |
-| Keychron M4 | 3434:d040 | 3 | unknown, unsupported |  |
-| Keychron 4K receivers | 3434:d038, 3434:d043 | 3 | unknown, unsupported |  |
-| Keychron M3 8K | 3434:d050 | - | different protocol, not supported |  |
-| Keychron M5 8K | 3434:d048 | - | different protocol, not supported |  |
-| Keychron M6 8K | 3434:d049 | - | different protocol, not supported |  |
-| Keychron Ultra-Link 8K receiver | 3434:d028 | - | different protocol, not supported |  |
 
 - **Verified:** only the Keychron M1 wired over its cable. All features below
   were exercised on it (`scripts/hw-test.sh`: 43 of 43 steps passed).
@@ -79,13 +67,11 @@ model from *likely* to *verified*: please use the [mouse report form](https://gi
   tick the matching checkbox (GUI). If you own one, please report what
   happens with the [mouse report form](https://github.com/CyberJody/tailglow/issues/new?template=mouse-report.yml);
   `docs/ADD-YOUR-MOUSE.md` explains how to go further (capture and verify).
-- **Unknown / unsupported:** the 4K-polling models sit on a different
-  interface (MI_03) in the vendor app's configuration. We have never seen their
-  traffic. `tailglow` lists them but will not open them.
-- **Not supported:** the 8K / Keychron Launcher family (M3 8K, M5 8K, M6 8K,
-  Ultra-Link receiver) uses a different protocol (HID output reports 0xB3 /
-  0xB5) and is not this project's protocol family. `tailglow` never sends
-  anything to them. Other projects cover them.
+- **Don't see your mouse?** Keychron makes more models than are listed here, and
+  we're adding them as owners test them. Please tell us about yours with the
+  [mouse report form](https://github.com/CyberJody/tailglow/issues/new?template=mouse-report.yml) (pick "Other"): the `lsusb` line (3434:xxxx) and
+  the output of `tailglow list` are all we need to start. Watch or star the repo
+  to hear when it lands.
 
 ## Features
 
