@@ -18,7 +18,9 @@ path = "src/main.rs"
 [dependencies]
 tailglow-core.workspace = true
 tailglow-hid.workspace = true
-iced = { workspace = true, features = ["tiny-skia", "canvas", "tokio", "linux-theme-detection", "x11", "wayland", "fira-sans"] }
+# image-without-codecs: raster images in the canvas (the render preview);
+# PNG decoding stays with the `image` crate below.
+iced = { workspace = true, features = ["tiny-skia", "canvas", "image-without-codecs", "tokio", "linux-theme-detection", "x11", "wayland", "fira-sans"] }
 image.workspace = true
 # Native file dialogs through xdg-desktop-portal (pure Rust: no GTK -dev packages).
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }

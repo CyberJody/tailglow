@@ -245,6 +245,8 @@ pub fn system_scheme_changes() -> iced::Subscription<SystemScheme> {
 #[serde(default)]
 pub struct GuiConfig {
     pub theme: ThemeMode,
+    /// The Lighting preview's render view.
+    pub preview: crate::render::View,
 }
 
 impl GuiConfig {
@@ -310,16 +312,23 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("tailglow-gui-cfg-{}", std::process::id()));
         let path = dir.join("sub").join("gui.toml");
         assert_eq!(GuiConfig::load(&path).theme, ThemeMode::System, "missing");
+        assert_eq!(GuiConfig::load(&path).preview, crate::render::View::Hero);
         GuiConfig {
             theme: ThemeMode::Dark,
+            preview: crate::render::View::Top,
         }
         .save(&path)
         .unwrap();
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
-            "theme = \"dark\"\n"
+            "theme = \"dark\"\npreview = \"top\"\n"
         );
         assert_eq!(GuiConfig::load(&path).theme, ThemeMode::Dark);
+        assert_eq!(GuiConfig::load(&path).preview, crate::render::View::Top);
+        // A file from before the preview setting still loads.
+        std::fs::write(&path, "theme = \"light\"\n").unwrap();
+        assert_eq!(GuiConfig::load(&path).theme, ThemeMode::Light);
+        assert_eq!(GuiConfig::load(&path).preview, crate::render::View::Hero);
         std::fs::write(&path, "theme = \"purple\"\n").unwrap();
         assert_eq!(GuiConfig::load(&path).theme, ThemeMode::System, "junk");
         std::fs::write(&path, "other = 1\n").unwrap();

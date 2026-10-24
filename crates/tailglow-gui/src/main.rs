@@ -12,8 +12,12 @@
 //! - `TAILGLOW_GUI_CONFIG=FILE`: the GUI's own settings (theme), default
 //!   `$XDG_CONFIG_HOME/tailglow/gui.toml`.
 //! - `TAILGLOW_THEME_LOG=1`: print every theme change to stderr (tests).
+//! - `TAILGLOW_SHOT_TOUR=lighting` (with `--screenshot`): instead of the page
+//!   walk, save the Lighting page with every effect on each render view.
+//! - `TAILGLOW_RENDER_STATS=1`: print the render preview's frame times.
 
 mod preview;
+mod render;
 mod theme;
 
 use std::path::PathBuf;
@@ -22,7 +26,7 @@ use std::time::{Duration, Instant};
 
 use iced::widget::{
     button, canvas, checkbox, column, container, pick_list, row, rule, scrollable, slider, space,
-    text, text_input, tooltip, Column, Row,
+    stack, text, text_input, tooltip, Column, Row,
 };
 use iced::{Color, Element, Fill, Font, Length, Subscription, Task, Theme};
 
@@ -157,6 +161,7 @@ fn main() -> iced::Result {
         .title("Tailglow")
         .subscription(App::subscription)
         .theme(App::theme)
+        .style(App::style)
         .window(iced::window::Settings {
             size: iced::Size::new(1040.0, 760.0),
             min_size: Some(iced::Size::new(900.0, 640.0)),
@@ -382,6 +387,8 @@ enum Message {
     FileDone(Result<String, String>),
     ThemeMode(ThemeChoice),
     SystemScheme(SystemScheme),
+    PreviewView(render::View),
+    Scale(f32),
     // bluetooth (status only)
     Bluetooth(BtState),
     ConfirmForget(bool),
@@ -390,6 +397,8 @@ enum Message {
     // screenshots
     ShotStep,
     Shot(iced::window::Screenshot),
+    /// Repaint the whole window (see [`App::style`]).
+    Repaint,
 }
 
 /// What one op did: reports sent, and read-back mismatches (imports).
@@ -484,11 +493,45 @@ struct App {
     bt: Option<BtState>,
     /// The "Remove old pairings" confirm step is showing.
     confirm_forget: bool,
+    /// Which render the Lighting preview shows (saved in gui.toml).
+    preview_view: render::View,
+    /// The render preview's built scene (shared with its canvas draws).
+    render_cache: Mutex<render::Cache>,
+    /// Window scale factor (the render is composited at device pixels).
+    scale: f32,
+    /// What the header shows, and a counter bumped when it changes (see
+    /// [`App::style`]).
+    header_key: String,
+    repaints: u32,
 }
 
 struct ScreenshotRun {
     dir: PathBuf,
     step: usize,
+    /// `TAILGLOW_SHOT_TOUR=lighting`: the Lighting page per effect and view.
+    tour: Option<Vec<(Effect, render::View)>>,
+}
+
+/// The shots of a lighting tour: every effect on the 3/4 view, a few on top.
+fn lighting_tour() -> Vec<(Effect, render::View)> {
+    let mut v: Vec<_> = Effect::ALL
+        .iter()
+        .map(|&e| (e, render::View::Hero))
+        .collect();
+    for e in [
+        Effect::Static,
+        Effect::RainbowSwirl,
+        Effect::Snake,
+        Effect::Off,
+    ] {
+        v.push((e, render::View::Top));
+    }
+    v
+}
+
+/// File-name form of an effect label ("Static Light" -> "static-light").
+fn slug(label: &str) -> String {
+    label.to_lowercase().replace(' ', "-")
 }
 
 impl App {
@@ -497,9 +540,8 @@ impl App {
             .screenshot
             .or_else(|| std::env::var_os("TAILGLOW_SCREENSHOT_DIR").map(PathBuf::from));
         let config_path = theme::config_path(config_dir());
-        let theme_mode = opts
-            .theme
-            .unwrap_or_else(|| GuiConfig::load(&config_path).theme);
+        let config = GuiConfig::load(&config_path);
+        let theme_mode = opts.theme.unwrap_or(config.theme);
         // Ask the desktop once before the first frame (≤ 300 ms), so a dark
         // desktop does not see a light flash; the subscription follows it.
         let system_scheme = theme::read_system_scheme();
@@ -531,9 +573,20 @@ impl App {
             system_scheme,
             config_path,
             state_path: state_path(),
-            screenshot: screenshot_dir.map(|dir| ScreenshotRun { dir, step: 0 }),
+            screenshot: screenshot_dir.map(|dir| ScreenshotRun {
+                dir,
+                step: 0,
+                tour: std::env::var("TAILGLOW_SHOT_TOUR")
+                    .is_ok_and(|v| v == "lighting")
+                    .then(lighting_tour),
+            }),
             bt: None,
             confirm_forget: false,
+            preview_view: config.preview,
+            render_cache: Mutex::new(render::Cache::default()),
+            scale: 1.0,
+            header_key: String::new(),
+            repaints: 0,
         };
         app.log_theme("start");
         let mut tasks = vec![app.connect()];
@@ -588,6 +641,20 @@ impl App {
             .unwrap_or(false)
     }
 
+    /// The render view the Lighting preview shows, or `None` for the vector
+    /// drawing: the render is a Keychron M1, so other models (and a 2.4 GHz
+    /// receiver, which does not say which mouse it serves) get the drawing;
+    /// so does any build where the embedded render fails to decode.
+    fn render_view(&self) -> Option<render::View> {
+        let m1 = self.snapshot().is_none_or(|s| {
+            s.info
+                .model
+                .is_some_and(|m| m.id == tailglow_core::device::KEYCHRON_M1_WIRED.id)
+        });
+        let view = self.preview_view;
+        (m1 && render::layers(view).is_ok()).then_some(view)
+    }
+
     /// Always an explicit theme: "System" is resolved here from the portal
     /// (see theme.rs for why iced's own system theme is not used).
     fn theme(&self) -> Option<Theme> {
@@ -619,6 +686,10 @@ impl App {
         let mut subs = vec![
             theme::system_scheme_changes().map(Message::SystemScheme),
             Subscription::run(bluetooth_stream),
+            iced::event::listen_with(|event, _, _| match event {
+                iced::Event::Window(iced::window::Event::Rescaled(f)) => Some(Message::Scale(f)),
+                _ => None,
+            }),
         ];
         let animated = self.page == Page::Lighting
             && !matches!(self.lighting.effect, Effect::Off | Effect::Static);
@@ -659,11 +730,70 @@ impl App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
+        let task = self.handle(message);
+        let key = self.header_key();
+        if key != self.header_key {
+            self.header_key = key;
+            self.repaints = self.repaints.wrapping_add(1);
+            // Once more a moment later, after the new header has settled.
+            return Task::batch([task, after(Duration::from_millis(300), Message::Repaint)]);
+        }
+        task
+    }
+
+    /// Everything the header shows (model, battery, DPI, rate, profile,
+    /// connection state).
+    fn header_key(&self) -> String {
+        let usb = match &self.connection {
+            Connection::Connecting => "connecting".to_string(),
+            Connection::Connected(s, _) => {
+                let (i, p) = (&s.info, &s.info.pointer);
+                format!(
+                    "{} {} {:?} {} {} {:?} {}",
+                    i.model_name(),
+                    i.firmware.version,
+                    i.status(),
+                    i.device.battery_percent,
+                    p.dpi.active_dpi(),
+                    p.report_rate(),
+                    p.profile
+                )
+            }
+            Connection::Failed {
+                message,
+                permission,
+            } => format!("failed {permission} {message}"),
+        };
+        let bt = self
+            .bt_connected()
+            .map(|m| format!("{} {:?}", m.model, m.battery));
+        format!("{usb} | {bt:?}")
+    }
+
+    /// The window background. iced 0.14's tiny-skia renderer repaints only
+    /// the regions it thinks changed, and when the header changes (e.g.
+    /// "Looking for…" → the connected mouse) it misses part of the new
+    /// text: the battery label and the DPI · Hz line kept the top of what
+    /// was there before (seen in live X11 grabs; full-window screenshots
+    /// look right). A different background color makes it repaint the
+    /// whole window, so the color flips its last mantissa bit (invisible)
+    /// whenever the header changes.
+    fn style(&self, theme: &Theme) -> iced::theme::Style {
+        use iced::theme::Base;
+        let mut style = theme.base();
+        if self.repaints % 2 == 1 {
+            let r = style.background_color.r;
+            style.background_color.r = f32::from_bits(r.to_bits() ^ 1);
+        }
+        style
+    }
+
+    fn handle(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Connected(Ok((snap, path))) => {
                 self.adopt(snap, path);
                 self.status = None;
-                Task::none()
+                ask_scale_factor()
             }
             Message::Connected(Err(message)) => {
                 let permission = message.contains("permission") || message.contains("udev");
@@ -671,7 +801,7 @@ impl App {
                     message,
                     permission,
                 };
-                Task::none()
+                ask_scale_factor()
             }
             Message::Reconnect => {
                 self.connection = Connection::Connecting;
@@ -1007,7 +1137,10 @@ impl App {
             Message::ThemeMode(choice) => {
                 self.theme_mode = choice.mode;
                 self.log_theme("picked");
-                let config = GuiConfig { theme: choice.mode };
+                let config = GuiConfig {
+                    theme: choice.mode,
+                    preview: self.preview_view,
+                };
                 if let Err(e) = config.save(&self.config_path) {
                     self.set_status(
                         format!(
@@ -1026,6 +1159,36 @@ impl App {
                 }
                 Task::none()
             }
+            Message::PreviewView(view) => {
+                self.preview_view = view;
+                // Keep the file's theme (a --theme run does not save its own).
+                let config = GuiConfig {
+                    theme: GuiConfig::load(&self.config_path).theme,
+                    preview: view,
+                };
+                if self.screenshot.is_none() {
+                    if let Err(e) = config.save(&self.config_path) {
+                        self.set_status(
+                            format!(
+                                "View changed, but could not be saved to {}: {e}",
+                                self.config_path.display()
+                            ),
+                            true,
+                        );
+                    }
+                }
+                Task::none()
+            }
+            Message::Scale(f) => {
+                if f.is_finite() && f > 0.0 {
+                    self.scale = f;
+                }
+                Task::none()
+            }
+            Message::Repaint => {
+                self.repaints = self.repaints.wrapping_add(1);
+                Task::none()
+            }
             Message::ShotStep => self.screenshot_step(),
             Message::Shot(shot) => {
                 let connected = self.connected();
@@ -1035,13 +1198,20 @@ impl App {
                     return Task::none();
                 };
                 let page = pages.get(run.step).copied().unwrap_or(Page::Lighting);
-                let name = if connected {
-                    format!("{}.png", page.shot_name())
-                } else if bt_only {
-                    format!("bluetooth-{}.png", page.shot_name())
-                } else {
-                    "05-no-mouse.png".to_string()
-                };
+                let name =
+                    if let Some((effect, view)) = run.tour.as_ref().and_then(|t| t.get(run.step)) {
+                        let view = match view {
+                            render::View::Hero => "hero",
+                            render::View::Top => "top",
+                        };
+                        format!("lighting-{view}-{}.png", slug(effect.label()))
+                    } else if connected {
+                        format!("{}.png", page.shot_name())
+                    } else if bt_only {
+                        format!("bluetooth-{}.png", page.shot_name())
+                    } else {
+                        "05-no-mouse.png".to_string()
+                    };
                 let path = run.dir.join(&name);
                 if let Err(e) = save_png(&path, &shot) {
                     eprintln!("screenshot {}: {e}", path.display());
@@ -1154,6 +1324,38 @@ impl App {
         };
         let step = run.step;
         let dir = run.dir.clone();
+        if let Some(tour) = &run.tour {
+            let Some(&(effect, view)) = tour.get(step) else {
+                return iced::exit();
+            };
+            // Preview only (nothing is written): the effect with the values
+            // the mouse stores for it, in red at full brightness so every
+            // shot compares with the approved still.
+            self.go_to(Page::Lighting);
+            let stored = self
+                .snapshot()
+                .map(|s| s.lighting.for_effect(effect))
+                .unwrap_or_default();
+            self.lighting = Lighting {
+                effect,
+                color: if effect.has_color() {
+                    Rgb::RED
+                } else {
+                    stored.color
+                },
+                brightness: Brightness::MAX,
+                ..stored
+            };
+            self.sync_hex();
+            self.preview_view = view;
+            let _ = std::fs::create_dir_all(&dir);
+            return after(Duration::from_millis(700), Message::Tick(Instant::now())).chain(
+                iced::window::latest().then(|id| match id {
+                    Some(id) => iced::window::screenshot(id).map(Message::Shot),
+                    None => Task::none(),
+                }),
+            );
+        }
         let pages = self.shot_pages();
         let last = pages.len().max(1);
         if step >= last {
@@ -1479,12 +1681,57 @@ impl App {
             t,
             silhouette: true,
         };
+        // The 3D render of the M1 with the effect on its light zones; the
+        // vector drawing for other models, or if the render cannot load.
+        let render_view = self.render_view();
+        let big: Element<'_, Message> = match render_view {
+            Some(view) => {
+                let theme = theme::resolve(self.theme_mode, self.system_scheme);
+                let program = render::RenderPreview {
+                    cache: &self.render_cache,
+                    view,
+                    lights: big.zone_lights(),
+                    background: render_background(&theme),
+                    scale: self.scale,
+                };
+                let toggle = Row::with_children(render::View::ALL.map(|v| {
+                    button(text(v.label()).size(12))
+                        .padding([3, 10])
+                        .on_press(Message::PreviewView(v))
+                        .style(move |theme, status| {
+                            if v == view {
+                                button::primary(theme, status)
+                            } else {
+                                secondary_button(theme, status)
+                            }
+                        })
+                        .into()
+                }))
+                .spacing(4);
+                stack![
+                    canvas(program).width(Fill).height(Fill),
+                    container(toggle)
+                        .padding(8)
+                        .width(Fill)
+                        .align_x(iced::alignment::Horizontal::Right),
+                ]
+                .width(Fill)
+                .height(Fill)
+                .into()
+            }
+            None => canvas(big).width(Fill).height(Fill).into(),
+        };
         // The preview takes whatever height the controls leave, so the page
         // has no dead band at the bottom.
-        let preview_panel = container(canvas(big).width(Fill).height(Fill))
-            .width(Fill)
-            .height(Fill)
-            .style(panel);
+        let preview_panel =
+            container(big)
+                .width(Fill)
+                .height(Fill)
+                .style(if render_view.is_some() {
+                    render_panel
+                } else {
+                    panel
+                });
 
         // Color controls.
         let color_enabled = l.effect.has_color();
@@ -2801,6 +3048,21 @@ fn locked_field(theme: &Theme) -> container::Style {
 }
 
 /// Panels: the weak background with a subtle border, same on both themes.
+/// The render preview's fill: the page background, a little darker than
+/// the white light-theme panels, so the red glow can show on it (light
+/// added to pure white is invisible). The approved mock-ups use it too.
+fn render_background(theme: &Theme) -> Color {
+    theme.extended_palette().background.base.color
+}
+
+/// The render preview panel: the page background with the panel border.
+fn render_panel(theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(render_background(theme).into()),
+        ..panel(theme)
+    }
+}
+
 fn panel(theme: &Theme) -> container::Style {
     let p = theme.extended_palette();
     container::Style {
@@ -2960,6 +3222,14 @@ fn bluetooth_stream() -> impl iced::futures::Stream<Item = Message> {
             }
         },
     )
+}
+
+/// Asks the window for its scale factor (the render preview uses it).
+fn ask_scale_factor() -> Task<Message> {
+    iced::window::latest().then(|id| match id {
+        Some(id) => iced::window::scale_factor(id).map(Message::Scale),
+        None => Task::none(),
+    })
 }
 
 fn after(delay: Duration, message: Message) -> Task<Message> {

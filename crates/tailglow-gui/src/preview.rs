@@ -11,6 +11,7 @@ use iced::mouse;
 use iced::widget::canvas::{self, Frame, Geometry, Path, Stroke};
 use iced::{Color, Point, Rectangle, Renderer, Size, Theme};
 
+use crate::render::{self, ZoneLight, ZONE_COUNT};
 use tailglow_core::{Effect, Lighting};
 
 /// One LED strip preview. `t` is the animation clock in seconds.
@@ -42,20 +43,31 @@ impl Preview {
 
     /// Color of segment `i` (0..SEGMENTS) at the current time.
     pub fn segment_color(&self, i: usize) -> Color {
+        if self.lighting.effect == Effect::Off {
+            return Color::from_rgb(0.08, 0.08, 0.09);
+        }
+        let (c, k) = self.light(i as f32 / SEGMENTS as f32, i);
+        scale(c, k)
+    }
+
+    /// The LED at `pos` (0..1 along the strip; `index` counts LEDs for the
+    /// alternating Christmas pattern): its hue at full value, and its
+    /// intensity 0..1 (brightness setting and animation). Shared by the
+    /// vector drawing and the render preview.
+    pub fn light(&self, pos: f32, index: usize) -> (Color, f32) {
         let l = &self.lighting;
         let base = rgb(l.color.r, l.color.g, l.color.b);
         let level = self.level();
         let phase = self.t * self.rate();
-        let frac = i as f32 / SEGMENTS as f32;
         match l.effect {
-            Effect::Off => Color::from_rgb(0.08, 0.08, 0.09),
-            Effect::Static => scale(base, level),
+            Effect::Off => (Color::BLACK, 0.0),
+            Effect::Static => (base, level),
             Effect::Breathing => {
                 let breath = 0.5 + 0.5 * (phase * std::f32::consts::TAU).sin();
-                scale(base, level * (0.08 + 0.92 * breath))
+                (base, level * (0.08 + 0.92 * breath))
             }
-            Effect::Rainbow => scale(hsv(phase.fract(), 1.0, 1.0), level),
-            Effect::RainbowSwirl => scale(hsv((phase + frac).fract(), 1.0, 1.0), level),
+            Effect::Rainbow => (hsv(phase.fract(), 1.0, 1.0), level),
+            Effect::RainbowSwirl => (hsv((phase + pos).fract(), 1.0, 1.0), level),
             Effect::Snake => {
                 let head = (phase * 2.0 * SEGMENTS as f32) % (SEGMENTS as f32 * 2.0);
                 // Bounce back and forth along the strip.
@@ -64,23 +76,34 @@ impl Preview {
                 } else {
                     2.0 * SEGMENTS as f32 - head
                 };
-                let d = (i as f32 - head).abs();
+                let d = (pos * SEGMENTS as f32 - head).abs();
                 let glow = (1.0 - d / 3.5).clamp(0.0, 1.0);
-                scale(base, level * (0.06 + 0.94 * glow * glow))
+                (base, level * (0.06 + 0.94 * glow * glow))
             }
             Effect::Christmas => {
                 let flip = ((phase * 2.0) as usize) % 2;
                 let red = Color::from_rgb(0.95, 0.1, 0.1);
                 let green = Color::from_rgb(0.1, 0.85, 0.2);
-                let c = if (i / 2 + flip).is_multiple_of(2) {
+                let c = if (index / 2 + flip).is_multiple_of(2) {
                     red
                 } else {
                     green
                 };
-                let twinkle = 0.75 + 0.25 * ((phase * 7.0 + i as f32).sin());
-                scale(c, level * twinkle)
+                let twinkle = 0.75 + 0.25 * ((phase * 7.0 + index as f32).sin());
+                (c, level * twinkle)
             }
         }
+    }
+
+    /// The effect on the render's zones: each zone takes the LED at its
+    /// place on the strip (front to back, then left to right; see
+    /// [`render::slots`]). Christmas alternates by front-to-back row.
+    pub fn zone_lights(&self) -> [ZoneLight; ZONE_COUNT] {
+        let slots = render::slots();
+        std::array::from_fn(|z| {
+            let (c, k) = self.light(slots[z].pos, slots[z].row * 2);
+            ZoneLight::new(c, k)
+        })
     }
 }
 
@@ -320,6 +343,26 @@ mod tests {
         let mut dim = preview(Effect::Static, 0.0);
         dim.lighting.brightness = Brightness::MIN;
         assert!(dim.segment_color(0).r < 0.3);
+    }
+
+    #[test]
+    fn zone_lights_follow_the_effect() {
+        let off = preview(Effect::Off, 0.5).zone_lights();
+        assert!(off.iter().all(|z| z.on == 0.0 && z.rgb == [0.0; 3]));
+        let red = preview(Effect::Static, 0.5).zone_lights();
+        assert!(red
+            .iter()
+            .all(|z| z.on > 0.999 && z.rgb[0] > 0.999 && z.rgb[1] == 0.0 && z.rgb[2] == 0.0));
+        let mut dim = preview(Effect::Static, 0.5);
+        dim.lighting.brightness = Brightness::MIN;
+        assert!(dim.zone_lights()[0].rgb[0] < 0.2);
+        // Swirl and snake differ between the front and the back of the mouse.
+        for e in [Effect::RainbowSwirl, Effect::Snake] {
+            let z = preview(e, 0.2).zone_lights();
+            let wheel = z[0];
+            let palm = z[1];
+            assert_ne!(wheel, palm, "{e:?}");
+        }
     }
 
     #[test]
