@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Tailglow (https://github.com/CyberJody/tailglow), GPL-3.0-or-later.
+# Keychron M1 (wired, 3434:d035): let the logged-in desktop user open ONLY the
+# vendor configuration interface (USB interface 2) for lighting control.
+# Pointer/keyboard interfaces 0 and 1 stay root-only.
+# Two lines: udev matches all ATTRS{} of one rule on a single parent device, and
+# idVendor (usb_device) and bInterfaceNumber (usb_interface) live on different parents.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3434", ATTRS{idProduct}=="d035", ENV{KEYCHRON_M1}="1"
+SUBSYSTEM=="hidraw", ENV{KEYCHRON_M1}=="1", ATTRS{bInterfaceNumber}=="02", TAG+="uaccess"

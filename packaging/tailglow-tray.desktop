@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Tailglow tray
+Comment=Keychron mouse battery, connection, lighting and DPI in the tray
+Exec=tailglow-tray
+Icon=io.github.cyberjody.Tailglow
+Terminal=false
+NoDisplay=true
+Categories=Settings;HardwareSettings;
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5

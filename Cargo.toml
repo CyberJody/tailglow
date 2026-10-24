@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/tailglow-core",
+    "crates/tailglow-hid",
+    "crates/tailglow",
+    "crates/tailglow-gui",
+    "crates/tailglow-tray",
+]
+
+# Tailglow: open-source settings for Keychron mice.
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "GPL-3.0-or-later"
+authors = ["Tailglow contributors"]
+repository = "https://github.com/CyberJody/tailglow"
+homepage = "https://github.com/CyberJody/tailglow"
+keywords = ["keychron", "mouse", "rgb", "linux", "hid"]
+categories = ["hardware-support", "command-line-utilities", "gui"]
+
+[workspace.dependencies]
+tailglow-core = { path = "crates/tailglow-core" }
+tailglow-hid = { path = "crates/tailglow-hid" }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+thiserror = "2"
+anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+libc = "0.2"
+hidapi = { version = "2", default-features = false }
+iced = { version = "0.14", default-features = false }
+image = { version = "0.25", default-features = false, features = ["png"] }
+tempfile = "3"
+assert_cmd = "2"
+predicates = "3"
+# D-Bus, pure Rust. The same features everywhere so one zbus build serves
+# the tray (ksni) and the BlueZ status code.
+zbus = { version = "5", default-features = false, features = ["tokio", "blocking-api"] }
+
+[profile.release]
+strip = true
+lto = "thin"

@@ -1,0 +1,17 @@
+[package]
+name = "tailglow-core"
+description = "Keychron mouse protocol, device model and settings (no I/O)"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+serde.workspace = true
+toml.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: "My Keychron mouse works / doesn't work"
+description: Tell us how Tailglow does with your Keychron mouse. Confirmed reports move a model from "likely" to "verified".
+title: "[mouse report] <model>: works / partly / doesn't work"
+labels: ["mouse report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing! Reads are always safe. Writes to a model marked *likely* need
+        `--allow-untested` (CLI) or the "Allow untested" box (GUI) and are at your own risk.
+        Note your settings first (`tailglow export my-settings.toml`) so you can put them back.
+        The shipped udev rule covers the M1 only; for another model add its product id to it
+        first (`docs/ADD-YOUR-MOUSE.md`, section 5), or `tailglow info` reports a permission error.
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Mouse model
+      options:
+        - Keychron M1
+        - Keychron M2
+        - Keychron M2 mini
+        - Keychron M3
+        - Keychron M3 mini
+        - Keychron M6
+        - Keychron M7
+        - Keychron M2 4K
+        - Keychron M3 4K
+        - Keychron M3 mini 4K
+        - Keychron M4
+        - Keychron M6 4K
+        - Keychron M3 8K
+        - Keychron M5 8K
+        - Keychron M6 8K
+        - Other (say which below)
+    validations:
+      required: true
+
+  - type: input
+    id: model-other
+    attributes:
+      label: Model details
+      description: For "Other", the exact model name. Optional otherwise (e.g. the colour or the USB ID from `lsusb`, 3434:xxxx).
+    validations:
+      required: false
+
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      multiple: true
+      options:
+        - USB cable
+        - 2.4 GHz receiver
+        - Bluetooth
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: Linux distribution and desktop
+      placeholder: e.g. Linux Mint 22 Cinnamon, Bazzite (KDE), CachyOS (Hyprland)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Tailglow version
+      description: "`tailglow --version`, or the git commit if you built from source."
+    validations:
+      required: true
+
+  - type: textarea
+    id: info
+    attributes:
+      label: Output of `tailglow info`
+      description: Also `tailglow list` if `info` finds no mouse.
+      render: shell
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: tested
+    attributes:
+      label: What did you test?
+      description: Tick what you tried (whether it worked or not).
+      options:
+        - label: Lighting (effect, colour, brightness, speed)
+        - label: DPI (stages, active stage)
+        - label: Report rate
+        - label: Buttons (remapping, reset)
+        - label: Battery / connection status
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Works
+        - Partly works
+        - Doesn't work
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What worked, what didn't, any error messages, anything that looked different from the vendor app.
+    validations:
+      required: false

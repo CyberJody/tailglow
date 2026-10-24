@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- SPDX-License-Identifier: GPL-3.0-or-later
+       Tailglow app icon (original artwork for this project): a mouse
+       silhouette inside an RGB ring. Same design as window_icon() in
+       crates/tailglow-gui/src/main.rs. Installed as
+       /usr/share/icons/hicolor/scalable/apps/io.github.cyberjody.Tailglow.svg
+       The comment sits inside <svg> on purpose: gdk-pixbuf sniffs only the
+       first bytes, and a long comment before <svg> made GTK reject the file. -->
+  <title>Tailglow</title>
+  <g fill="none" stroke-width="10">
+    <path d="M64 10 A54 54 0 0 1 110.77 37" stroke="#ff3b30"/>
+    <path d="M110.77 37 A54 54 0 0 1 110.77 91" stroke="#ffcc00"/>
+    <path d="M110.77 91 A54 54 0 0 1 64 118" stroke="#34c759"/>
+    <path d="M64 118 A54 54 0 0 1 17.23 91" stroke="#32d2f5"/>
+    <path d="M17.23 91 A54 54 0 0 1 17.23 37" stroke="#3b5bff"/>
+    <path d="M17.23 37 A54 54 0 0 1 64 10" stroke="#d63bff"/>
+  </g>
+  <path d="M64 22 C84 22 92 36 92 54 V80 C92 98 80 108 64 108 C48 108 36 98 36 80 V54 C36 36 44 22 64 22 Z"
+        fill="#23272e" stroke="#e8eaed" stroke-width="3"/>
+  <path d="M64 23.5 V56 M37.5 56 H90.5" stroke="#e8eaed" stroke-width="3" fill="none"/>
+  <rect x="60" y="32" width="8" height="14" rx="4" fill="#4fc3f7"/>
+</svg>

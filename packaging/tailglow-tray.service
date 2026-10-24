@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Tailglow tray icon: battery and connection (USB cable or Bluetooth), quick
+# lighting/DPI menu, low-battery alert, per-application profiles (X11). StatusNotifierItem over the session bus.
+#
+# Either enable this unit:
+#     systemctl --user enable --now tailglow-tray
+# or rely on the XDG autostart entry (/etc/xdg/autostart/tailglow-tray.desktop)
+# that the .deb installs; use one, not both.
+#
+# Untested models: add --allow-untested to ExecStart in a drop-in
+# (systemctl --user edit tailglow-tray).
+
+[Unit]
+Description=Tailglow: tray icon for Keychron mice
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tailglow-tray
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

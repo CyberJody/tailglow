@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# CI for Tailglow. Build/test on the three desktop platforms,
+# package a .deb on Linux. No publishing and no release job: artifacts stay
+# attached to the workflow run.
+#
+# Linux build deps: tailglow-hid uses raw hidraw ioctls (no libudev); the iced
+# GUI needs libxkbcommon and (for the wayland/x11 features) the usual X11
+# headers. hidapi (Windows/macOS backend) builds without extra packages there.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev \
+            libx11-dev libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: rustfmt
+        if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+
+      - name: clippy
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then cargo clippy --workspace --all-targets -- -D warnings; \
+          else cargo clippy -p tailglow-core -p tailglow-hid -p tailglow -p tailglow-gui --all-targets -- -D warnings; fi
+        shell: bash
+
+      - name: test
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then cargo test --workspace; \
+          else cargo test -p tailglow-core -p tailglow-hid -p tailglow -p tailglow-gui; fi
+        shell: bash
+
+      - name: build (release)
+        # tailglow-tray is Linux-only (StatusNotifierItem + X11).
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then cargo build --release --workspace; \
+          else cargo build --release -p tailglow -p tailglow-gui; fi
+        shell: bash
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: tailglow-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            target/release/tailglow
+            target/release/tailglow-gui
+            target/release/tailglow-tray
+            target/release/tailglow.exe
+            target/release/tailglow-gui.exe
+
+      - name: cargo-deb
+        if: runner.os == 'Linux'
+        run: |
+          cargo install cargo-deb --locked
+          cargo deb -p tailglow --no-build
+
+      - name: Inspect .deb
+        if: runner.os == 'Linux'
+        run: |
+          dpkg-deb -I target/debian/*.deb
+          dpkg-deb -c target/debian/*.deb
+
+      - name: Upload .deb
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tailglow-deb
+          if-no-files-found: error
+          path: target/debian/*.deb

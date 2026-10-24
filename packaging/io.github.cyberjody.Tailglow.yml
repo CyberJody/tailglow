@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Flatpak manifest for Tailglow (io.github.cyberjody.Tailglow).
+#
+# STATUS: UNBUILT / UNTESTED. flatpak-builder is not installed on the build
+# machine, so this manifest has been written but never run. Expect to fix
+# small things (module name, cargo-sources.json, finish-args) on first build.
+#
+# Build (once cargo-sources.json exists, see the TODO below):
+#   flatpak install flathub org.freedesktop.Platform//24.08 \
+#       org.freedesktop.Sdk//24.08 org.freedesktop.Sdk.Extension.rust-stable//24.08
+#   flatpak-builder --user --install --force-clean build-dir packaging/io.github.cyberjody.Tailglow.yml
+#   flatpak run io.github.cyberjody.Tailglow
+#
+# Access notes:
+# - --device=all is needed because the mouse's vendor interface is a hidraw
+#   node; Flatpak has no finer-grained hidraw permission. The host still needs
+#   the udev rule (packaging/70-keychron-m1.rules) so the user can open it.
+# - --system-talk-name=org.bluez: Bluetooth status (connection, battery) is
+#   read from BlueZ on the system bus. Tailglow only reads properties and
+#   listens for signals there; the one method it can call is
+#   Adapter1.RemoveDevice, after the user confirms removing a stale pairing.
+# - --talk-name=org.kde.StatusNotifierWatcher is for the tray (tailglow-tray);
+#   --talk-name=org.freedesktop.Notifications for its low-battery alert.
+
+app-id: io.github.cyberjody.Tailglow
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: tailglow-gui
+
+finish-args:
+  - --device=all
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --system-talk-name=org.bluez
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=org.freedesktop.Notifications
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/tailglow/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+modules:
+  - name: tailglow
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --workspace --verbose
+      - install -Dm755 target/release/tailglow /app/bin/tailglow
+      - install -Dm755 target/release/tailglow-gui /app/bin/tailglow-gui
+      - install -Dm755 target/release/tailglow-tray /app/bin/tailglow-tray
+      # The desktop file, icon and window app id all use the app id, so
+      # docks match the running window to the launcher.
+      - install -Dm644 packaging/io.github.cyberjody.Tailglow.desktop /app/share/applications/io.github.cyberjody.Tailglow.desktop
+      - install -Dm644 packaging/icons/io.github.cyberjody.Tailglow.svg /app/share/icons/hicolor/scalable/apps/io.github.cyberjody.Tailglow.svg
+      - install -Dm644 packaging/io.github.cyberjody.Tailglow.metainfo.xml /app/share/metainfo/io.github.cyberjody.Tailglow.metainfo.xml
+      - install -Dm644 LICENSE /app/share/licenses/io.github.cyberjody.Tailglow/LICENSE
+    sources:
+      - type: dir
+        path: ..
+      # TODO: generate the vendored crate list for the offline build with
+      # flatpak-cargo-generator from flatpak-builder-tools:
+      #   python3 flatpak-cargo-generator.py Cargo.lock -o packaging/cargo-sources.json
+      # then uncomment (paths are relative to this manifest's directory):
+      # - cargo-sources.json

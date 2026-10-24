@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Tailglow contributors -->
+<component type="desktop-application">
+  <id>io.github.cyberjody.Tailglow</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Tailglow</name>
+  <summary>Open-source settings for Keychron mice</summary>
+  <developer id="io.github.cyberjody">
+    <name>Tailglow contributors</name>
+  </developer>
+  <description>
+    <p>
+      Tailglow changes the settings of Keychron mice without the vendor's
+      Windows app: lighting effects and colors, DPI stages, report rate,
+      sensor options, button remapping, macros and settings files.
+    </p>
+    <p>
+      Settings are changed over the USB cable and stay in the mouse. Over
+      Bluetooth, Tailglow shows the connection and battery level, and can
+      remove old pairings; Keychron's firmware does not accept settings over
+      Bluetooth.
+    </p>
+    <p>
+      Verified on the Keychron M1. Other Keychron mice of the same family are
+      listed as likely compatible and are read-only until someone tests them.
+      The protocol was learned from clean-room USB captures.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.cyberjody.Tailglow.desktop</launchable>
+  <url type="homepage">https://github.com/CyberJody/tailglow</url>
+  <url type="bugtracker">https://github.com/CyberJody/tailglow/issues</url>
+  <url type="vcs-browser">https://github.com/CyberJody/tailglow</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Lighting effects with a live preview</caption>
+      <image>https://raw.githubusercontent.com/CyberJody/tailglow/main/screenshots/dark/00-lighting.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>DPI stages</caption>
+      <image>https://raw.githubusercontent.com/CyberJody/tailglow/main/screenshots/light/01-dpi.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Connected over Bluetooth: battery and connection, settings read-only</caption>
+      <image>https://raw.githubusercontent.com/CyberJody/tailglow/main/screenshots/bluetooth/gui-dark/bluetooth-03-settings.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+  <keywords>
+    <keyword>Keychron</keyword>
+    <keyword>mouse</keyword>
+    <keyword>DPI</keyword>
+    <keyword>RGB</keyword>
+    <keyword>lighting</keyword>
+  </keywords>
+  <provides>
+    <binary>tailglow</binary>
+    <binary>tailglow-gui</binary>
+    <binary>tailglow-tray</binary>
+    <modalias>usb:v3434pD035*</modalias>
+  </provides>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-24">
+      <description>
+        <p>First release under the name Tailglow, licensed GPL-3.0-or-later.
+        Adds Bluetooth status (connection, battery) and stale-pairing cleanup.</p>
+      </description>
+    </release>
+  </releases>
+</component>

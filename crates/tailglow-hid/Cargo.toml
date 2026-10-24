@@ -1,0 +1,25 @@
+[package]
+name = "tailglow-hid"
+description = "HID transports for Tailglow: Linux hidraw (no libudev), hidapi elsewhere, a FakeMouse replaying captures, and read-only Bluetooth status from BlueZ"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+tailglow-core.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc.workspace = true
+# Bluetooth status from BlueZ (read-only, see src/bluez.rs).
+zbus.workspace = true
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+hidapi.workspace = true

@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Tailglow apply-on-plug: systemd --user unit.
+#
+# Runs `tailglow watch`, which polls sysfs for the mouse's hidraw node every
+# 2 s and, whenever the mouse appears, re-applies the last saved settings from
+# ~/.config/tailglow/state.toml (only the differences from the mouse's read-back
+# are written). Needs the udev rule (70-keychron-m1.rules) so the user can
+# open the vendor interface.
+#
+# Install (the .deb puts this file in /usr/lib/systemd/user/; from source copy
+# it to ~/.config/systemd/user/), then:
+#
+#     systemctl --user daemon-reload
+#     systemctl --user enable --now tailglow-watch
+#
+# Check:  systemctl --user status tailglow-watch
+#         journalctl --user -u tailglow-watch
+#
+# Likely-but-untested models (M2, M3, ...) are refused for writes by default.
+# To accept the risk, override ExecStart in a drop-in
+# (systemctl --user edit tailglow-watch) with
+#     ExecStart=
+#     ExecStart=/usr/bin/tailglow watch --interval 2 --allow-untested
+
+[Unit]
+Description=Tailglow: re-apply saved Keychron mouse settings when the mouse is plugged in
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tailglow watch --interval 2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

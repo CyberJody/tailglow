@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Tailglow
+GenericName=Mouse Settings
+Comment=Open-source settings for Keychron mice
+Exec=tailglow-gui
+Icon=io.github.cyberjody.Tailglow
+StartupWMClass=io.github.cyberjody.Tailglow
+Terminal=false
+Categories=Settings;HardwareSettings;
+Keywords=Keychron;mouse;DPI;RGB;lighting;battery;Bluetooth;
+StartupNotify=true

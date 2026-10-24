@@ -1,0 +1,67 @@
+[package]
+name = "tailglow"
+description = "Tailglow command-line tool: open-source settings for Keychron mice"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "tailglow"
+path = "src/main.rs"
+
+[dependencies]
+tailglow-core.workspace = true
+tailglow-hid.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
+
+# Debian package: `cargo build --release && cargo deb -p tailglow --no-build`
+# (from the workspace root). One package "tailglow" carries the three binaries,
+# the udev rule, the systemd user units, the desktop entries, the AppStream
+# metainfo and the icon. Asset paths are relative to this crate directory,
+# except "target/release/..." which cargo-deb resolves against the workspace
+# target directory. The Debian copyright file (DEP-5, GPL-3+) is
+# packaging/debian-copyright; the full license text is LICENSE.
+[package.metadata.deb]
+name = "tailglow"
+maintainer = "Tailglow contributors <https://github.com/CyberJody/tailglow/issues>"
+copyright = "2026 Tailglow contributors"
+license-file = ["../../packaging/debian-copyright", "0"]
+extended-description = """\
+Tailglow: open-source settings for Keychron mice. A command-line tool
+(tailglow), a desktop app (tailglow-gui) and a tray icon (tailglow-tray) for
+lighting effects, DPI stages, report rate, sensor options, button remapping,
+macros and settings files over the USB cable, plus connection and battery
+status over Bluetooth (read-only; the firmware takes no settings there). Built from
+clean-room USB captures of the vendor's Windows app. Verified on the
+Keychron M1 (wired, USB 3434:d035); other Keychron Engine-family mice are
+listed as likely-compatible but untested.
+Includes a udev rule for the M1's vendor interface and a systemd user unit
+(tailglow-watch) that re-applies saved settings when the mouse is plugged in."""
+section = "utils"
+priority = "optional"
+depends = "$auto"
+assets = [
+    ["target/release/tailglow", "usr/bin/", "755"],
+    ["target/release/tailglow-gui", "usr/bin/", "755"],
+    ["target/release/tailglow-tray", "usr/bin/", "755"],
+    ["../../packaging/70-keychron-m1.rules", "usr/lib/udev/rules.d/", "644"],
+    ["../../packaging/tailglow-watch.service", "usr/lib/systemd/user/", "644"],
+    ["../../packaging/tailglow-tray.service", "usr/lib/systemd/user/", "644"],
+    ["../../packaging/tailglow-tray.desktop", "etc/xdg/autostart/", "644"],
+    ["../../packaging/io.github.cyberjody.Tailglow.desktop", "usr/share/applications/", "644"],
+    ["../../packaging/icons/io.github.cyberjody.Tailglow.svg", "usr/share/icons/hicolor/scalable/apps/", "644"],
+    ["../../packaging/io.github.cyberjody.Tailglow.metainfo.xml", "usr/share/metainfo/", "644"],
+    ["../../README.md", "usr/share/doc/tailglow/", "644"],
+]

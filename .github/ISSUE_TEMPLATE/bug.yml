@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Bug report
+description: Something in Tailglow is broken or wrong.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. tailglow ...
+        2. ...
+    validations:
+      required: false
+
+  - type: input
+    id: system
+    attributes:
+      label: Tailglow version, distribution, mouse model and connection
+      placeholder: e.g. 0.1.0, Linux Mint 22, Keychron M1 over USB cable
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Output of `tailglow info` and any error messages
+      render: shell
+    validations:
+      required: false
