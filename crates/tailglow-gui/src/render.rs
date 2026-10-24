@@ -380,9 +380,26 @@ impl Layers {
 pub fn layers(view: View) -> Result<&'static Layers, &'static str> {
     static CELLS: [OnceLock<Result<Layers, String>>; 2] = [OnceLock::new(), OnceLock::new()];
     CELLS[view.index()]
-        .get_or_init(|| Layers::load(view))
+        .get_or_init(|| {
+            let t0 = Instant::now();
+            let layers = Layers::load(view);
+            if stats_enabled() {
+                eprintln!("render: {view:?} layers decoded in {:.1?}", t0.elapsed());
+            }
+            layers
+        })
         .as_ref()
         .map_err(|e| e.as_str())
+}
+
+/// Decodes the views on a background thread, so the Lighting page does not
+/// wait for them on its first frame.
+pub fn preload() {
+    std::thread::spawn(|| {
+        for view in View::ALL {
+            let _ = layers(view);
+        }
+    });
 }
 
 // ----- resampling and blur --------------------------------------------------
@@ -991,12 +1008,16 @@ fn edge_fade_at(w: usize, h: usize, gw: usize, gh: usize) -> Vec<f32> {
 
 // ----- canvas widget --------------------------------------------------------
 
-/// Built scene plus frame-time statistics, shared by the canvas draws.
+/// Built scenes plus frame-time statistics, shared by the canvas draws.
+/// Two scenes are kept: effects with and without a color card give the
+/// panel two heights, so switching effects does not rebuild.
 #[derive(Default)]
 pub struct Cache {
-    scene: Option<Scene>,
+    scenes: Vec<Scene>,
     stats: Stats,
 }
+
+const KEPT_SCENES: usize = 2;
 
 #[derive(Default)]
 struct Stats {
@@ -1008,17 +1029,26 @@ struct Stats {
 
 impl Cache {
     fn scene(&mut self, layers: &Layers, view: View, w: usize, h: usize, bg: [u8; 3]) -> &Scene {
-        let stale = self
-            .scene
-            .as_ref()
-            .is_none_or(|s| (s.view, s.width, s.height, s.background) != (view, w, h, bg));
-        if stale {
-            let t0 = Instant::now();
-            let placement = Placement::fit(layers, w, h, MAX_ZOOM);
-            self.scene = Some(Scene::new(layers, view, w, h, placement, bg));
-            self.stats.built = Some(t0.elapsed());
+        let key = (view, w, h, bg);
+        match self
+            .scenes
+            .iter()
+            .position(|s| (s.view, s.width, s.height, s.background) == key)
+        {
+            Some(i) => {
+                let scene = self.scenes.remove(i);
+                self.scenes.insert(0, scene);
+            }
+            None => {
+                let t0 = Instant::now();
+                let placement = Placement::fit(layers, w, h, MAX_ZOOM);
+                self.scenes
+                    .insert(0, Scene::new(layers, view, w, h, placement, bg));
+                self.scenes.truncate(KEPT_SCENES);
+                self.stats.built = Some(t0.elapsed());
+            }
         }
-        self.scene.as_ref().expect("scene just built")
+        &self.scenes[0]
     }
 }
 

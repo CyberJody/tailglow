@@ -589,6 +589,7 @@ impl App {
             repaints: 0,
         };
         app.log_theme("start");
+        render::preload();
         let mut tasks = vec![app.connect()];
         if app.screenshot.is_some() {
             tasks.push(after(Duration::from_millis(1200), Message::ShotStep));
