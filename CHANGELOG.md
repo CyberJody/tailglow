@@ -28,6 +28,10 @@ What works:
   settings when the mouse is plugged in.
 - Desktop app (`tailglow-gui`) with Lighting, DPI, Buttons, Settings and About
   pages, light and dark themes that follow the desktop.
+- Live lighting preview on an original 3D render of the M1 (3/4 and top views):
+  every effect animates on the mouse's real light zones in your colour,
+  brightness and speed, with soft glow on the background. Runs on the CPU, no
+  GPU needed.
 - Tray icon (`tailglow-tray`) with battery, connection, quick lighting and DPI
   menu, low-battery notification and per-application profiles (X11).
 - Bluetooth: connection and battery level, read-only, from BlueZ; old
