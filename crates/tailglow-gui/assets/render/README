@@ -1,0 +1,23 @@
+Rendered images of a white Keychron M1 used by the Lighting page preview.
+
+Provenance: an original 3D render made for this project. The mouse was
+modelled from scratch (parametric body, panels, slots, light pipes) and
+rendered in Blender (Cycles). No Keychron photos, renders, CAD files or
+textures were used in the scene; public product photos were only looked at
+for proportions. These files are part of Tailglow and are released under the
+repository license (GPL-3.0-or-later).
+
+Layers per view (hero = 3/4 view, 800x600; top = top view, 700x700):
+
+  base_lights_off.png      RGBA, transparent background, every LED dark,
+                           contact shadow in the alpha channel
+  zone_<name>.png          8-bit gray: the light one zone adds (emitter,
+                           bounce on the shell, pool on the desk, halo)
+  zone_<name>_direct.png   8-bit gray: coverage of the emitter surface itself
+
+The app combines them in linear light (see src/render.rs):
+  out = srgb(surface * (1 - 0.85 * max(direct * on)) + sum(tint * brightness * zone))
+plus a soft glow spill (two wide blurs of the zone light).
+
+Regenerate from the full-size render output with
+  scripts/prepare-render-assets.py RENDER_DIR
