@@ -1,6 +1,6 @@
 # Tailglow: open-source settings for Keychron mice on Linux
 
-<!-- hero render goes here -->
+![The white Keychron M1 render with Rainbow Swirl, as the Lighting page previews it](screenshots/hero.png)
 ![Tailglow: the Lighting page in the dark theme](screenshots/dark/00-lighting.png)
 
 Lighting, DPI, report rate, sensor options, button remapping and battery
@@ -398,6 +398,10 @@ tested).
   smoke test that walks through the pages, saves one PNG per page and exits.
 - `TAILGLOW_FAKE=1 tailglow-gui`: run against the recorded M1 without hardware
   (`none` / `noperm` / a pcap path work as for the CLI).
+- `TAILGLOW_SHOT_TOUR=lighting` with `--screenshot DIR`: save the Lighting
+  page with every effect on the 3D render instead (`TOUR_DIR=DIR
+  scripts/screenshots.sh` runs it for both themes).
+- `TAILGLOW_RENDER_STATS=1`: print the render preview's frame times.
 
 ## Screenshots
 
@@ -408,6 +412,17 @@ Every page in both themes is in `screenshots/light/` and `screenshots/dark/`
 |---|---|
 | ![Lighting, light theme](screenshots/light/00-lighting.png) | ![Lighting, dark theme](screenshots/dark/00-lighting.png) |
 | ![Settings, light theme](screenshots/light/03-settings.png) | ![Settings, dark theme](screenshots/dark/03-settings.png) |
+
+The Lighting page previews the effect live on a 3D render of the white M1,
+with the light on its real zones (slots, wheel, light pipes) and the glow on
+the desk; "3/4 view" / "Top view" switches the camera. The render is an
+original made for this project (`crates/tailglow-gui/assets/render/`); other
+models get a simple drawing instead.
+
+| Static red, 3/4 view | Rainbow Swirl and Snake, top view |
+|---|---|
+| ![Static red on the M1 render, light theme](screenshots/lighting/light-hero-static-red.png) | ![Rainbow Swirl on the top view, light theme](screenshots/lighting/light-top-rainbow-swirl.png) |
+| ![Static red on the M1 render, dark theme](screenshots/lighting/dark-hero-static-red.png) | ![Snake on the top view, dark theme](screenshots/lighting/dark-top-snake.png) |
 
 Over Bluetooth (fake BlueZ; `scripts/bluetooth-screenshots.sh`):
 
