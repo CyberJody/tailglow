@@ -1,7 +1,7 @@
 # Tailglow: open-source settings for Keychron mice on Linux
 
-![The white Keychron M1 render with Rainbow Swirl, as the Lighting page previews it](screenshots/hero.png)
-![Tailglow: the Lighting page in the dark theme](screenshots/dark/00-lighting.png)
+![Tailglow: the Lighting page in the light theme, Rainbow Swirl, top view](screenshots/lighting/light-top-rainbow-swirl.png)
+![Tailglow: the Lighting page in the light theme, Christmas, top view](screenshots/lighting/light-top-christmas.png)
 
 Lighting, DPI, report rate, sensor options, button remapping and battery
 status for Keychron mice, without the vendor's Windows app.
